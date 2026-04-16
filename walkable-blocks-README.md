@@ -1,6 +1,6 @@
-# Optimal Block Size Calculator
+# Walkable Block Size Calculator
 
-An interactive, browser-based calculator that determines the optimal urban block size for pedestrian accessibility. Companion tool for:
+An interactive, browser-based calculator that determines the urban block size that maximizes pedestrian accessibility to all surrounding parcels within a given walkshed distance. Companion tool for:
 
 > Sevtsuk, A. (2026). *Are Smaller Blocks More Walkable? Testing the Nonlinear Relationship Between Urban Block Size and Pedestrian Travel.*
 
