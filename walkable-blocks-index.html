@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Optimal Block Size Calculator | Walkable Blocks</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #0a0e17;
+    --bg-card: #111827;
+    --bg-input: #1e293b;
+    --border: #1e293b;
+    --border-hover: #334155;
+    --text: #e2e8f0;
+    --text-muted: #94a3b8;
+    --text-dim: #64748b;
+    --accent: #3b82f6;
+    --accent-light: #60a5fa;
+    --accent-glow: rgba(59, 130, 246, 0.15);
+    --green: #10b981;
+    --green-light: #34d399;
+    --orange: #f59e0b;
+    --red: #ef4444;
+    --street: #374151;
+    --parcel-fill: #1e3a5f;
+    --parcel-optimal: #1a4731;
+    --parcel-stroke: #475569;
+    --entrance: #f59e0b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Header */
+  .header {
+    padding: 20px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: linear-gradient(180deg, rgba(17,24,39,0.95) 0%, var(--bg) 100%);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .header-icon {
+    width: 36px; height: 36px;
+    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .header-icon svg { width: 20px; height: 20px; }
+  .header h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.02em; }
+  .header .subtitle { font-size: 13px; color: var(--text-muted); margin-left: auto; }
+
+  /* Layout */
+  .app {
+    display: grid;
+    grid-template-columns: 360px 1fr;
+    min-height: calc(100vh - 73px);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  .field label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .field label .unit {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+  .field input[type="number"],
+  .field input[type="range"] {
+    width: 100%;
+  }
+  .field input[type="number"] {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input[type="number"]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .field input[type="number"]::-webkit-inner-spin-button { opacity: 0.5; }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .slider-row input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+  .slider-row input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    background: var(--accent);
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 6px var(--accent-glow);
+  }
+  .slider-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent-light);
+    min-width: 48px;
+    text-align: right;
+  }
+
+  .btn-compute {
+    background: linear-gradient(135deg, var(--accent), #2563eb);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.01em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .btn-compute:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(59,130,246,0.3);
+  }
+  .btn-compute:active { transform: translateY(0); }
+  .btn-compute.running {
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  .advanced-toggle {
+    font-size: 13px;
+    color: var(--text-dim);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+    transition: color 0.2s;
+  }
+  .advanced-toggle:hover { color: var(--text-muted); }
+  .advanced-toggle .arrow {
+    transition: transform 0.2s;
+    font-size: 10px;
+  }
+  .advanced-toggle.open .arrow { transform: rotate(90deg); }
+  .advanced-section {
+    display: none;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .advanced-section.open { display: flex; }
+
+  /* Results card */
+  .results-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    display: none;
+  }
+  .results-card.visible { display: block; }
+  .results-card h3 {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(30,41,59,0.5);
+  }
+  .result-row:last-child { border-bottom: none; }
+  .result-label { font-size: 13px; color: var(--text-muted); }
+  .result-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--green-light);
+  }
+  .result-value.highlight {
+    font-size: 22px;
+    color: var(--green-light);
+  }
+  .result-value .sub {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--text-dim);
+  }
+
+  /* Main content */
+  .main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    padding: 0 24px;
+    gap: 0;
+  }
+  .tab {
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-dim);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s;
+    user-select: none;
+  }
+  .tab:hover { color: var(--text-muted); }
+  .tab.active {
+    color: var(--accent-light);
+    border-bottom-color: var(--accent);
+  }
+
+  /* Tab content */
+  .tab-panels { flex: 1; overflow: auto; position: relative; }
+  .tab-panel {
+    display: none;
+    padding: 24px;
+    height: 100%;
+  }
+  .tab-panel.active { display: flex; flex-direction: column; }
+
+  /* Visualization panel */
+  #viz-panel {
+    align-items: center;
+    justify-content: center;
+    overflow: auto;
+  }
+  #grid-svg {
+    max-width: 100%;
+    max-height: calc(100vh - 180px);
+  }
+  .viz-legend {
+    display: flex;
+    gap: 20px;
+    padding: 12px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .legend-swatch {
+    width: 14px; height: 14px;
+    border-radius: 3px;
+  }
+  .legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+
+  /* Chart panel */
+  #chart-panel {
+    align-items: center;
+    justify-content: center;
+  }
+  #chart-container {
+    width: 100%;
+    max-width: 800px;
+    position: relative;
+  }
+  #gravity-canvas {
+    width: 100%;
+    background: var(--bg-card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+  }
+  .chart-title {
+    font-size: 15px;
+    font-weight: 600;
+    text-align: center;
+    margin-bottom: 12px;
+    color: var(--text);
+  }
+  .chart-subtitle {
+    font-size: 12px;
+    text-align: center;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  /* Empty state */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    height: 100%;
+    color: var(--text-dim);
+    text-align: center;
+  }
+  .empty-state svg { opacity: 0.3; }
+  .empty-state p { font-size: 14px; max-width: 280px; }
+
+  /* Info panel */
+  #info-panel { padding: 24px 32px; }
+  .info-content {
+    max-width: 680px;
+    line-height: 1.7;
+  }
+  .info-content h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin: 24px 0 8px;
+    color: var(--text);
+  }
+  .info-content h2:first-child { margin-top: 0; }
+  .info-content p {
+    font-size: 14px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .info-content .equation {
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--accent-light);
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+
+  /* Spinner */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    width: 18px; height: 18px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    display: none;
+  }
+  .btn-compute.running .spinner { display: block; }
+  .btn-compute.running .btn-label { display: none; }
+
+  /* Progress bar */
+  .progress-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    display: none;
+  }
+  .progress-bar.visible { display: block; }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--green));
+    border-radius: 2px;
+    transition: width 0.15s;
+    width: 0%;
+  }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .app {
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr;
+    }
+    .sidebar {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      max-height: 50vh;
+    }
+  }
+
+  /* Tooltip */
+  .tooltip {
+    position: fixed;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text);
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    max-width: 200px;
+  }
+
+  /* Citation */
+  .citation {
+    font-size: 12px;
+    color: var(--text-dim);
+    padding: 12px 0;
+    border-top: 1px solid var(--border);
+    margin-top: auto;
+    line-height: 1.6;
+  }
+  .citation a {
+    color: var(--accent-light);
+    text-decoration: none;
+  }
+  .citation a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-icon">
+    <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+      <rect x="3" y="3" width="7" height="7" rx="1"/>
+      <rect x="14" y="3" width="7" height="7" rx="1"/>
+      <rect x="3" y="14" width="7" height="7" rx="1"/>
+      <rect x="14" y="14" width="7" height="7" rx="1"/>
+    </svg>
+  </div>
+  <h1>Optimal Block Size Calculator</h1>
+  <span class="subtitle">Interactive companion to Sevtsuk (2026)</span>
+</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div>
+      <div class="section-label">Parcel Dimensions</div>
+      <div class="input-group">
+        <div class="field">
+          <label>Plot Frontage <span class="unit">(m)</span></label>
+          <input type="number" id="frontage" value="15" min="5" max="100" step="1">
+        </div>
+        <div class="field">
+          <label>Plot Depth <span class="unit">(m)</span></label>
+          <input type="number" id="depth" value="30" min="10" max="200" step="1">
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="section-label">Street Dimensions</div>
+      <div class="input-group">
+        <div class="field">
+          <label>Street Width X <span class="unit">(m)</span></label>
+          <input type="number" id="streetX" value="15" min="3" max="80" step="1">
+        </div>
+        <div class="field">
+          <label>Street Width Y <span class="unit">(m)</span></label>
+          <input type="number" id="streetY" value="15" min="3" max="80" step="1">
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="advanced-toggle" id="advToggle" onclick="toggleAdvanced()">
+        <span class="arrow">&#9654;</span> Advanced Parameters
+      </div>
+      <div class="advanced-section" id="advSection">
+        <div class="field">
+          <label>Beta (distance decay)</label>
+          <div class="slider-row">
+            <input type="range" id="betaSlider" min="0.001" max="0.01" step="0.0005" value="0.005">
+            <span class="slider-val" id="betaVal">0.005</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>Search Radius <span class="unit">(m)</span></label>
+          <div class="slider-row">
+            <input type="range" id="radiusSlider" min="500" max="2000" step="100" value="1000">
+            <span class="slider-val" id="radiusVal">1000</span>
+          </div>
+        </div>
+        <div class="field">
+          <label>PPF Range (min-max)</label>
+          <div style="display:flex;gap:8px">
+            <input type="number" id="ppfMin" value="2" min="1" max="10" step="1" style="flex:1">
+            <input type="number" id="ppfMax" value="30" min="5" max="60" step="1" style="flex:1">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="progress-bar" id="progressBar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <button class="btn-compute" id="computeBtn" onclick="runComputation()">
+      <span class="btn-label">Compute Optimal Block Size</span>
+      <div class="spinner"></div>
+    </button>
+
+    <div class="results-card" id="resultsCard">
+      <h3>Results</h3>
+      <div class="result-row">
+        <span class="result-label">Optimal PPF</span>
+        <span class="result-value highlight" id="resPpf">--</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Optimal Block Length</span>
+        <span class="result-value" id="resBlockLen">--</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Max Mean Gravity</span>
+        <span class="result-value" id="resGravity">--</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Block Width (incl. streets)</span>
+        <span class="result-value" id="resCellW">--</span>
+      </div>
+      <div class="result-row">
+        <span class="result-label">Block Depth (incl. streets)</span>
+        <span class="result-value" id="resCellH">--</span>
+      </div>
+    </div>
+
+    <div class="citation">
+      Based on: Sevtsuk, A. (2026). "Are Smaller Blocks More Walkable? Testing the Nonlinear Relationship Between Urban Block Size and Pedestrian Travel."<br>
+      See also: <a href="https://doi.org/10.51347/jum.v20i2.4056" target="_blank">Sevtsuk et al. (2016)</a>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="tabs">
+      <div class="tab active" data-tab="viz" onclick="switchTab('viz')">Block Grid</div>
+      <div class="tab" data-tab="chart" onclick="switchTab('chart')">Gravity Curve</div>
+      <div class="tab" data-tab="info" onclick="switchTab('info')">About</div>
+    </div>
+
+    <div class="tab-panels">
+      <div class="tab-panel active" id="viz-panel">
+        <div class="empty-state" id="vizEmpty">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <rect x="3" y="3" width="7" height="7" rx="1"/>
+            <rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/>
+            <rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+          <p>Set your parcel and street dimensions, then click <strong>Compute</strong> to see the optimal block layout.</p>
+        </div>
+        <div id="vizContent" style="display:none; width:100%; flex-direction:column; align-items:center; gap:12px;">
+          <div class="viz-legend" id="vizLegend"></div>
+          <svg id="grid-svg"></svg>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="chart-panel">
+        <div class="empty-state" id="chartEmpty">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <polyline points="22,6 12,13 2,6"/>
+            <path d="M2 18 L8 13 L14 16 L22 8"/>
+          </svg>
+          <p>The gravity accessibility curve will appear here after computation.</p>
+        </div>
+        <div id="chartContent" style="display:none; width:100%; flex-direction:column; align-items:center;">
+          <div class="chart-title" id="chartTitle"></div>
+          <div class="chart-subtitle" id="chartSubtitle"></div>
+          <div id="chart-container">
+            <canvas id="gravity-canvas" width="800" height="450"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-panel" id="info-panel">
+        <div class="info-content">
+          <h2>How It Works</h2>
+          <p>This calculator determines the optimal block size for pedestrian accessibility using a gravity-based accessibility model. For a given set of parcel and street dimensions, it simulates urban grids with varying numbers of plots per block frontage (PPF) and computes the mean Hansen gravity accessibility from a central block.</p>
+
+          <h2>The Gravity Model</h2>
+          <p>Pedestrian accessibility for each parcel is computed as:</p>
+          <div class="equation">Gravity[i] = &Sigma;<sub>j</sub> 1 / e<sup>&beta; &middot; d[i,j]</sup>&emsp;for d[i,j] &le; r</div>
+          <p>where <em>d[i,j]</em> is the shortest network distance between parcel entrances, <em>&beta;</em> controls distance decay (willingness to walk), and <em>r</em> is the maximum search radius.</p>
+
+          <h2>The Nonlinear Relationship</h2>
+          <p>While shorter blocks create more intersections and route choices, they also introduce more street crossings (each adding distance cost) and reduce the number of parcels reachable within a fixed walking radius. Conversely, longer blocks reduce crossings but impose detours. The result is a parabolic relationship: both excessively short and excessively long blocks reduce accessibility, with an intermediate "optimal" block size maximizing it.</p>
+
+          <h2>What Affects the Optimal Block Size?</h2>
+          <p><strong>Wider streets</strong> shift the optimal block length upward, as each street crossing becomes costlier, favoring fewer but longer blocks. <strong>Greater willingness to walk</strong> (lower beta) also favors longer blocks, since pedestrians who walk further can tolerate the detours that longer blocks impose. <strong>Parcel dimensions</strong> affect how many destinations fit within a walking radius at each block size.</p>
+
+          <h2>Parameters</h2>
+          <p><strong>Plot Frontage:</strong> Width of each parcel along the street (meters).</p>
+          <p><strong>Plot Depth:</strong> Depth of each parcel perpendicular to the street (meters).</p>
+          <p><strong>Street Width X:</strong> Width of horizontal streets (meters).</p>
+          <p><strong>Street Width Y:</strong> Width of vertical streets (meters).</p>
+          <p><strong>Beta:</strong> Distance decay parameter. Lower values indicate greater willingness to walk. Typical range: 0.001-0.01 for distances in meters.</p>
+          <p><strong>Search Radius:</strong> Maximum walking distance considered (meters). Typically 1000-1500m for utilitarian walking trips.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+// ===== UI Helpers =====
+function toggleAdvanced() {
+  const toggle = document.getElementById('advToggle');
+  const section = document.getElementById('advSection');
+  toggle.classList.toggle('open');
+  section.classList.toggle('open');
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === tab + '-panel'));
+}
+
+document.getElementById('betaSlider').addEventListener('input', e => {
+  document.getElementById('betaVal').textContent = parseFloat(e.target.value).toFixed(4);
+});
+document.getElementById('radiusSlider').addEventListener('input', e => {
+  document.getElementById('radiusVal').textContent = e.target.value;
+});
+
+// ===== Grid Simulation Engine =====
+
+/**
+ * Compute mean Hansen gravity for the central block in a regular bi-directional grid.
+ * Returns { meanGravity, centralParcels, allParcels }
+ */
+function computeGravity(ppf, frontage, depth, streetX, streetY, beta, radius) {
+  const W = ppf * frontage + streetY; // horizontal cell period
+  const H = 2 * depth + streetX;      // vertical cell period
+
+  // How many blocks to extend in each direction to cover the radius
+  const nBlocksX = Math.ceil(radius / W) + 1;
+  const nBlocksY = Math.ceil(radius / H) + 1;
+
+  // Generate all parcel entrances
+  // Each parcel entrance: { x, y, blockCol, blockRow, side, idx }
+  const allParcels = [];
+  for (let bx = -nBlocksX; bx <= nBlocksX; bx++) {
+    for (let by = -nBlocksY; by <= nBlocksY; by++) {
+      const blockLeft = bx * W + streetY;
+      const blockBottom = by * H + streetX;
+
+      for (let i = 0; i < ppf; i++) {
+        const px = blockLeft + i * frontage + frontage / 2;
+        // Bottom-facing parcel: entrance at bottom edge of block = top edge of street below
+        allParcels.push({
+          x: px,
+          y: blockBottom,
+          bx, by, side: 'bottom', idx: i
+        });
+        // Top-facing parcel: entrance at top edge of block = bottom edge of street above
+        allParcels.push({
+          x: px,
+          y: blockBottom + 2 * depth,
+          bx, by, side: 'top', idx: i
+        });
+      }
+    }
+  }
+
+  // Identify central block parcels (bx=0, by=0)
+  const centralParcels = allParcels.filter(p => p.bx === 0 && p.by === 0);
+
+  // Precompute vertical street X-positions (center of street)
+  // Vertical streets are at x = j*W to j*W + streetY, center = j*W + streetY/2
+  // But for path calculation, we need the edges where parcels connect
+  // Left edge of vertical street at col j: x = j * W
+  // Right edge: x = j * W + streetY
+
+  // For shortest path: parcel entrances are on horizontal streets.
+  // To go between different horizontal streets, must use a vertical street.
+  // The vertical streets are at x intervals of W, spanning full height.
+
+  // Shortest network distance between two parcel entrances:
+  // Both are on horizontal streets.
+  function networkDistance(p1, p2) {
+    // Same horizontal street, same side → walk directly
+    if (Math.abs(p1.y - p2.y) < 0.001) {
+      return Math.abs(p1.x - p2.x);
+    }
+
+    const dy = Math.abs(p1.y - p2.y);
+    const dx = Math.abs(p1.x - p2.x);
+
+    // Check if parcels face the same horizontal street from opposite sides.
+    // Street at row k spans [k*H, k*H + streetX].
+    // Top-facing parcel below: y = k*H; bottom-facing above: y = k*H + streetX.
+    if (Math.abs(dy - streetX) < 0.001) {
+      const ymin = Math.min(p1.y, p2.y);
+      const k = Math.round(ymin / H);
+      if (Math.abs(ymin - k * H) < 0.001) {
+        return streetX + dx;          // cross street + walk horizontally
+      }
+    }
+
+    // Different horizontal streets → route through the best vertical street.
+    const minX = Math.min(p1.x, p2.x);
+    const maxX = Math.max(p1.x, p2.x);
+    const jMin = Math.floor(minX / W) - 1;
+    const jMax = Math.ceil(maxX / W) + 1;
+
+    let bestDist = Infinity;
+    for (let j = jMin; j <= jMax; j++) {
+      const vLeft = j * W;
+      const vRight = j * W + streetY;
+      const dx1 = p1.x >= vLeft && p1.x <= vRight ? 0
+                 : p1.x < vLeft ? vLeft - p1.x : p1.x - vRight;
+      const dx2 = p2.x >= vLeft && p2.x <= vRight ? 0
+                 : p2.x < vLeft ? vLeft - p2.x : p2.x - vRight;
+      const dist = dx1 + dy + dx2;
+      if (dist < bestDist) bestDist = dist;
+    }
+    return bestDist;
+  }
+
+  // Compute mean gravity for central block
+  let totalGravity = 0;
+  for (const cp of centralParcels) {
+    let gravity = 0;
+    for (const op of allParcels) {
+      if (op === cp) continue;
+      // Quick Euclidean pre-filter
+      const eucDist = Math.sqrt((cp.x - op.x) ** 2 + (cp.y - op.y) ** 2);
+      if (eucDist > radius) continue;
+
+      const d = networkDistance(cp, op);
+      if (d <= radius && d > 0) {
+        gravity += 1.0 / Math.exp(beta * d);
+      }
+    }
+    totalGravity += gravity;
+  }
+
+  const meanGravity = totalGravity / centralParcels.length;
+  return { meanGravity, centralParcels, allParcels, W, H };
+}
+
+
+// ===== Computation Runner =====
+let lastResults = null;
+
+async function runComputation() {
+  const btn = document.getElementById('computeBtn');
+  if (btn.classList.contains('running')) return;
+  btn.classList.add('running');
+
+  const frontage = parseFloat(document.getElementById('frontage').value) || 15;
+  const depth = parseFloat(document.getElementById('depth').value) || 30;
+  const streetX = parseFloat(document.getElementById('streetX').value) || 15;
+  const streetY = parseFloat(document.getElementById('streetY').value) || 15;
+  const beta = parseFloat(document.getElementById('betaSlider').value) || 0.005;
+  const radius = parseFloat(document.getElementById('radiusSlider').value) || 1000;
+  const ppfMin = parseInt(document.getElementById('ppfMin').value) || 2;
+  const ppfMax = parseInt(document.getElementById('ppfMax').value) || 30;
+
+  const progressBar = document.getElementById('progressBar');
+  const progressFill = document.getElementById('progressFill');
+  progressBar.classList.add('visible');
+  progressFill.style.width = '0%';
+
+  const results = [];
+  const totalSteps = ppfMax - ppfMin + 1;
+
+  // Run computation in chunks to keep UI responsive
+  await new Promise(resolve => {
+    let current = ppfMin;
+
+    function step() {
+      const chunkEnd = Math.min(current + 2, ppfMax + 1);
+      while (current < chunkEnd) {
+        const r = computeGravity(current, frontage, depth, streetX, streetY, beta, radius);
+        results.push({ ppf: current, meanGravity: r.meanGravity, data: r });
+        current++;
+      }
+      const progress = ((current - ppfMin) / totalSteps) * 100;
+      progressFill.style.width = progress + '%';
+
+      if (current <= ppfMax) {
+        requestAnimationFrame(step);
+      } else {
+        resolve();
+      }
+    }
+    requestAnimationFrame(step);
+  });
+
+  // Find optimal
+  let bestIdx = 0;
+  for (let i = 1; i < results.length; i++) {
+    if (results[i].meanGravity > results[bestIdx].meanGravity) bestIdx = i;
+  }
+  const best = results[bestIdx];
+
+  lastResults = {
+    results,
+    best,
+    bestIdx,
+    params: { frontage, depth, streetX, streetY, beta, radius }
+  };
+
+  // Update results card
+  const card = document.getElementById('resultsCard');
+  card.classList.add('visible');
+  document.getElementById('resPpf').textContent = best.ppf + ' plots';
+  document.getElementById('resBlockLen').textContent = (best.ppf * frontage).toFixed(0) + ' m';
+  document.getElementById('resGravity').textContent = best.meanGravity.toFixed(1);
+  document.getElementById('resCellW').textContent = (best.ppf * frontage + streetY).toFixed(0) + ' m';
+  document.getElementById('resCellH').textContent = (2 * depth + streetX).toFixed(0) + ' m';
+
+  // Draw visualization for optimal
+  drawGrid(best.ppf, frontage, depth, streetX, streetY);
+  drawChart(results, bestIdx, frontage, depth, streetX, streetY, beta, radius);
+
+  // Show content
+  document.getElementById('vizEmpty').style.display = 'none';
+  document.getElementById('vizContent').style.display = 'flex';
+  document.getElementById('chartEmpty').style.display = 'none';
+  document.getElementById('chartContent').style.display = 'flex';
+
+  btn.classList.remove('running');
+  progressBar.classList.remove('visible');
+}
+
+
+// ===== Grid Visualization =====
+function drawGrid(ppf, frontage, depth, streetX, streetY) {
+  const svg = document.getElementById('grid-svg');
+  const legend = document.getElementById('vizLegend');
+
+  const W = ppf * frontage + streetY;
+  const H = 2 * depth + streetX;
+
+  // Show a 3x3 block grid with the central block highlighted
+  const nBlocks = 3;
+  const totalW = nBlocks * W + streetY; // extra street on left
+  const totalH = nBlocks * H + streetX; // extra street on top
+
+  const scale = Math.min(700 / totalW, 550 / totalH);
+  const svgW = totalW * scale + 80;
+  const svgH = totalH * scale + 100;
+  const ox = 40; // offset x
+  const oy = 50; // offset y
+
+  svg.setAttribute('width', svgW);
+  svg.setAttribute('height', svgH);
+  svg.setAttribute('viewBox', `0 0 ${svgW} ${svgH}`);
+
+  let html = '';
+
+  // Background
+  html += `<rect x="0" y="0" width="${svgW}" height="${svgH}" fill="${getComputedStyle(document.documentElement).getPropertyValue('--bg').trim()}" rx="12"/>`;
+
+  // Title
+  html += `<text x="${svgW/2}" y="28" text-anchor="middle" fill="#e2e8f0" font-family="Inter,sans-serif" font-size="14" font-weight="600">Optimal Block Layout: ${ppf} Plots Per Frontage (${(ppf*frontage).toFixed(0)}m block length)</text>`;
+
+  // Streets background (fill the whole area as streets, then overlay blocks)
+  html += `<rect x="${ox}" y="${oy}" width="${totalW*scale}" height="${totalH*scale}" fill="#1e293b" rx="4"/>`;
+
+  // Draw blocks
+  for (let bx = 0; bx < nBlocks; bx++) {
+    for (let by = 0; by < nBlocks; by++) {
+      const blockX = ox + (bx * W + streetY) * scale;
+      const blockY = oy + (by * H + streetX) * scale;
+      const blockW = ppf * frontage * scale;
+      const blockH = 2 * depth * scale;
+
+      const isCentral = bx === 1 && by === 1;
+      const fill = isCentral ? '#0f2e1f' : '#111827';
+      const stroke = isCentral ? '#22c55e' : '#2d3748';
+      const strokeW = isCentral ? 2 : 1;
+
+      html += `<rect x="${blockX}" y="${blockY}" width="${blockW}" height="${blockH}" fill="${fill}" stroke="${stroke}" stroke-width="${strokeW}" rx="2"/>`;
+
+      // Draw individual parcels
+      for (let i = 0; i < ppf; i++) {
+        const px = blockX + i * frontage * scale;
+        const pW = frontage * scale;
+        const pDepth = depth * scale;
+
+        // Bottom parcel
+        html += `<rect x="${px}" y="${blockY}" width="${pW}" height="${pDepth}" fill="none" stroke="${isCentral ? '#1a5c36' : '#1e293b'}" stroke-width="0.5"/>`;
+        // Top parcel
+        html += `<rect x="${px}" y="${blockY + pDepth}" width="${pW}" height="${pDepth}" fill="none" stroke="${isCentral ? '#1a5c36' : '#1e293b'}" stroke-width="0.5"/>`;
+
+        // Entrance dots (bottom parcels: bottom edge, top parcels: top edge)
+        const dotR = Math.max(1.5, Math.min(3, frontage * scale * 0.12));
+        const dotCx = px + pW / 2;
+
+        // Bottom entrance
+        html += `<circle cx="${dotCx}" cy="${blockY}" r="${dotR}" fill="#f59e0b" opacity="0.85"/>`;
+        // Top entrance
+        html += `<circle cx="${dotCx}" cy="${blockY + 2*pDepth}" r="${dotR}" fill="#f59e0b" opacity="0.85"/>`;
+      }
+
+      // Block label
+      if (isCentral) {
+        html += `<text x="${blockX + blockW/2}" y="${blockY + blockH/2 + 4}" text-anchor="middle" fill="#34d399" font-family="Inter,sans-serif" font-size="11" font-weight="600">CENTRAL BLOCK</text>`;
+        html += `<text x="${blockX + blockW/2}" y="${blockY + blockH/2 + 18}" text-anchor="middle" fill="#6ee7b7" font-family="JetBrains Mono,monospace" font-size="10">${ppf} PPF &middot; ${(ppf*frontage).toFixed(0)}m</text>`;
+      }
+    }
+  }
+
+  // Dimension annotations
+  const centralBlockX = ox + (1 * W + streetY) * scale;
+  const centralBlockY = oy + (1 * H + streetX) * scale;
+  const blockW = ppf * frontage * scale;
+  const blockH = 2 * depth * scale;
+
+  // Block width dimension line (below)
+  const dimY = centralBlockY + blockH + 20;
+  html += `<line x1="${centralBlockX}" y1="${dimY}" x2="${centralBlockX + blockW}" y2="${dimY}" stroke="#64748b" stroke-width="1" marker-start="url(#arrowL)" marker-end="url(#arrowR)"/>`;
+  html += `<text x="${centralBlockX + blockW/2}" y="${dimY + 14}" text-anchor="middle" fill="#94a3b8" font-family="JetBrains Mono,monospace" font-size="10">${(ppf*frontage).toFixed(0)}m (${ppf} plots &times; ${frontage}m)</text>`;
+
+  // Block height dimension line (right)
+  const dimX = centralBlockX + blockW + 20;
+  html += `<line x1="${dimX}" y1="${centralBlockY}" x2="${dimX}" y2="${centralBlockY + blockH}" stroke="#64748b" stroke-width="1"/>`;
+  html += `<text x="${dimX + 4}" y="${centralBlockY + blockH/2}" text-anchor="start" fill="#94a3b8" font-family="JetBrains Mono,monospace" font-size="10" transform="rotate(90, ${dimX + 4}, ${centralBlockY + blockH/2})">${(2*depth).toFixed(0)}m (2 &times; ${depth}m)</text>`;
+
+  // Street width annotations
+  const stX = centralBlockX + blockW/2;
+  const stY1 = oy + (1 * H) * scale;
+  const stY2 = centralBlockY;
+  if ((stY2 - stY1) > 8) {
+    html += `<text x="${stX}" y="${(stY1+stY2)/2 + 3}" text-anchor="middle" fill="#475569" font-family="JetBrains Mono,monospace" font-size="9">street ${streetX}m</text>`;
+  }
+
+  // SVG defs (arrow markers)
+  html = `<defs>
+    <marker id="arrowL" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
+      <path d="M6,0 L0,3 L6,6" fill="none" stroke="#64748b" stroke-width="1"/>
+    </marker>
+    <marker id="arrowR" markerWidth="6" markerHeight="6" refX="0" refY="3" orient="auto">
+      <path d="M0,0 L6,3 L0,6" fill="none" stroke="#64748b" stroke-width="1"/>
+    </marker>
+  </defs>` + html;
+
+  svg.innerHTML = html;
+
+  // Legend
+  legend.innerHTML = `
+    <div class="legend-item"><div class="legend-swatch" style="background:#0f2e1f;border:1.5px solid #22c55e;"></div>Central block (measured)</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#111827;border:1px solid #2d3748;"></div>Surrounding blocks</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#f59e0b;"></div>Parcel entrances</div>
+    <div class="legend-item"><div class="legend-swatch" style="background:#1e293b;"></div>Streets</div>
+  `;
+}
+
+
+// ===== Chart =====
+function drawChart(results, bestIdx, frontage, depth, streetX, streetY, beta, radius) {
+  const canvas = document.getElementById('gravity-canvas');
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+
+  canvas.width = 800 * dpr;
+  canvas.height = 450 * dpr;
+  canvas.style.width = '800px';
+  canvas.style.height = '450px';
+  ctx.scale(dpr, dpr);
+
+  const W = 800, H = 450;
+  const pad = { top: 40, right: 40, bottom: 60, left: 70 };
+  const plotW = W - pad.left - pad.right;
+  const plotH = H - pad.top - pad.bottom;
+
+  // Clear
+  ctx.fillStyle = '#111827';
+  ctx.fillRect(0, 0, W, H);
+
+  const ppfs = results.map(r => r.ppf);
+  const gravities = results.map(r => r.meanGravity);
+  const minG = Math.min(...gravities) * 0.95;
+  const maxG = Math.max(...gravities) * 1.05;
+  const minPpf = Math.min(...ppfs);
+  const maxPpf = Math.max(...ppfs);
+
+  function xScale(ppf) { return pad.left + (ppf - minPpf) / (maxPpf - minPpf) * plotW; }
+  function yScale(g) { return pad.top + plotH - (g - minG) / (maxG - minG) * plotH; }
+
+  // Grid lines
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 1;
+  const nGridY = 5;
+  for (let i = 0; i <= nGridY; i++) {
+    const g = minG + (maxG - minG) * i / nGridY;
+    const y = yScale(g);
+    ctx.beginPath();
+    ctx.moveTo(pad.left, y);
+    ctx.lineTo(W - pad.right, y);
+    ctx.stroke();
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px "JetBrains Mono", monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(g.toFixed(1), pad.left - 8, y + 4);
+  }
+
+  // X grid
+  for (const r of results) {
+    const x = xScale(r.ppf);
+    ctx.beginPath();
+    ctx.strokeStyle = '#1e293b';
+    ctx.moveTo(x, pad.top);
+    ctx.lineTo(x, H - pad.bottom);
+    ctx.stroke();
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '11px "JetBrains Mono", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(r.ppf, x, H - pad.bottom + 16);
+  }
+
+  // Axis labels
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '12px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Plots Per Frontage (PPF)', W / 2, H - 10);
+
+  ctx.save();
+  ctx.translate(16, H / 2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.fillText('Mean Hansen Gravity', 0, 0);
+  ctx.restore();
+
+  // Draw curve (smooth)
+  ctx.beginPath();
+  ctx.strokeStyle = '#3b82f6';
+  ctx.lineWidth = 2.5;
+  ctx.lineJoin = 'round';
+  for (let i = 0; i < results.length; i++) {
+    const x = xScale(results[i].ppf);
+    const y = yScale(results[i].meanGravity);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Fill under curve
+  ctx.lineTo(xScale(results[results.length-1].ppf), yScale(minG));
+  ctx.lineTo(xScale(results[0].ppf), yScale(minG));
+  ctx.closePath();
+  const grad = ctx.createLinearGradient(0, pad.top, 0, H - pad.bottom);
+  grad.addColorStop(0, 'rgba(59,130,246,0.15)');
+  grad.addColorStop(1, 'rgba(59,130,246,0.02)');
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // Data points
+  for (let i = 0; i < results.length; i++) {
+    const x = xScale(results[i].ppf);
+    const y = yScale(results[i].meanGravity);
+    ctx.beginPath();
+    ctx.arc(x, y, i === bestIdx ? 6 : 3.5, 0, Math.PI * 2);
+    ctx.fillStyle = i === bestIdx ? '#10b981' : '#3b82f6';
+    ctx.fill();
+    if (i === bestIdx) {
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+  }
+
+  // Best point annotation
+  const bx = xScale(results[bestIdx].ppf);
+  const by = yScale(results[bestIdx].meanGravity);
+  const labelAbove = by > pad.top + 60;
+  const ly = labelAbove ? by - 20 : by + 30;
+
+  // Connector line
+  ctx.beginPath();
+  ctx.strokeStyle = '#34d399';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.moveTo(bx, by + (labelAbove ? -8 : 8));
+  ctx.lineTo(bx, ly + (labelAbove ? 14 : -14));
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Label background
+  const labelText = `Optimal: ${results[bestIdx].ppf} PPF (${results[bestIdx].meanGravity.toFixed(1)})`;
+  ctx.font = '600 12px Inter, sans-serif';
+  const tw = ctx.measureText(labelText).width;
+  const lbx = bx - tw / 2 - 8;
+  const lby = labelAbove ? ly - 14 : ly - 6;
+
+  ctx.fillStyle = 'rgba(16, 185, 129, 0.15)';
+  ctx.beginPath();
+  ctx.roundRect(lbx, lby, tw + 16, 22, 6);
+  ctx.fill();
+  ctx.strokeStyle = '#10b981';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.fillStyle = '#34d399';
+  ctx.textAlign = 'center';
+  ctx.fillText(labelText, bx, lby + 15);
+
+  // Block length secondary axis labels
+  ctx.fillStyle = '#475569';
+  ctx.font = '10px "JetBrains Mono", monospace';
+  ctx.textAlign = 'center';
+  for (const r of results) {
+    if (r.ppf % 2 === 0 || r.ppf === results[bestIdx].ppf) {
+      const x = xScale(r.ppf);
+      ctx.fillText((r.ppf * frontage).toFixed(0) + 'm', x, H - pad.bottom + 30);
+    }
+  }
+  ctx.fillStyle = '#475569';
+  ctx.font = '11px Inter, sans-serif';
+  ctx.fillText('Block Length', W / 2, H - pad.bottom + 44);
+
+  // Title and subtitle
+  document.getElementById('chartTitle').textContent = 'Mean Hansen Gravity vs. Block Size';
+  document.getElementById('chartSubtitle').textContent =
+    `Frontage: ${frontage}m | Depth: ${depth}m | Streets: ${streetX}m/${streetY}m | \u03B2: ${beta} | Radius: ${radius}m`;
+}
+
+
+// ===== Handle canvas interaction for tooltips =====
+document.getElementById('gravity-canvas').addEventListener('mousemove', function(e) {
+  if (!lastResults) return;
+  const rect = this.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+  const tooltip = document.getElementById('tooltip');
+
+  const { results } = lastResults;
+  const pad = { top: 40, right: 40, bottom: 60, left: 70 };
+  const plotW = 800 - pad.left - pad.right;
+  const plotH = 450 - pad.top - pad.bottom;
+  const ppfs = results.map(r => r.ppf);
+  const gravities = results.map(r => r.meanGravity);
+  const minG = Math.min(...gravities) * 0.95;
+  const maxG = Math.max(...gravities) * 1.05;
+  const minPpf = Math.min(...ppfs);
+  const maxPpf = Math.max(...ppfs);
+
+  function xScale(ppf) { return pad.left + (ppf - minPpf) / (maxPpf - minPpf) * plotW; }
+  function yScale(g) { return pad.top + plotH - (g - minG) / (maxG - minG) * plotH; }
+
+  let closest = null;
+  let closestDist = Infinity;
+  for (const r of results) {
+    const dx = mx - xScale(r.ppf);
+    const dy = my - yScale(r.meanGravity);
+    const d = Math.sqrt(dx*dx + dy*dy);
+    if (d < closestDist && d < 20) {
+      closestDist = d;
+      closest = r;
+    }
+  }
+
+  if (closest) {
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX + 12) + 'px';
+    tooltip.style.top = (e.clientY - 10) + 'px';
+    tooltip.innerHTML = `<strong>${closest.ppf} PPF</strong><br>Block: ${(closest.ppf * lastResults.params.frontage).toFixed(0)}m<br>Gravity: ${closest.meanGravity.toFixed(2)}`;
+  } else {
+    tooltip.style.display = 'none';
+  }
+});
+
+document.getElementById('gravity-canvas').addEventListener('mouseleave', function() {
+  document.getElementById('tooltip').style.display = 'none';
+});
+
+// Run initial computation on load
+window.addEventListener('load', () => {
+  setTimeout(runComputation, 200);
+});
+</script>
+</body>
+</html>
