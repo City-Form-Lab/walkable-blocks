@@ -557,7 +557,7 @@
     </div>
 
     <button class="btn-compute" id="computeBtn" onclick="runComputation()">
-      <span class="btn-label">Compute Optimal Block Size</span>
+      <span class="btn-label">Compute Accessibility Maximizing Block Size</span>
       <div class="spinner"></div>
     </button>
 
@@ -636,7 +636,7 @@
       <div class="tab-panel" id="info-panel">
         <div class="info-content">
           <h2>How It Works</h2>
-          <p>This calculator determines the optimal block size for pedestrian accessibility using a gravity-based accessibility model. For a given set of parcel and street dimensions, it simulates urban grids with varying numbers of plots per block frontage (PPF) and computes the mean Hansen gravity accessibility from a central block.</p>
+          <p>This calculator determines the urban block size that maximizes pedestrian accessibility to all surrounding parcels. For a given set of parcel and street dimensions, it simulates urban grids with varying numbers of plots per block frontage (PPF) and computes the mean Hansen gravity accessibility from a central block.</p>
 
           <h2>The Gravity Model</h2>
           <p>Pedestrian accessibility for each parcel is computed as:</p>
