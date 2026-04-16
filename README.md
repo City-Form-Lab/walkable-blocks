@@ -4,7 +4,7 @@ An interactive, browser-based calculator that determines the urban block size th
 
 > Sevtsuk, A. (2026). *Are Smaller Blocks More Walkable? Testing the Nonlinear Relationship Between Urban Block Size and Pedestrian Travel.*
 
-**[Launch the Calculator →](https://asevtsuk.github.io/walkable-blocks/)**
+**[Launch the Calculator →](https://city-form-lab.github.io/walkable-blocks/)**
 
 ## What It Does
 
